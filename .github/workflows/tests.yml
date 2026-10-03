@@ -1,0 +1,52 @@
+name: Django tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_DEBUG: 'true'
+      DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test --settings=config.test_settings
+  mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test-only-ci-password
+          MYSQL_DATABASE: testsite
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptest-only-ci-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DJANGO_DEBUG: 'true'
+      DB_ENGINE: mysql
+      DB_NAME: testsite
+      DB_USER: root
+      DB_PASSWORD: test-only-ci-password
+      DB_HOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev build-essential pkg-config
+      - run: pip install -r requirements-mysql.txt
+      - run: python manage.py migrate
+      - run: python manage.py seed_courses
+      - run: python manage.py test --settings=config.test_settings
