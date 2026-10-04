@@ -1,4 +1,7 @@
 from pathlib import Path
+from django.conf import settings
+from django.urls import reverse
+from .seo import metadata, public_courses, BRAND
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -13,8 +16,25 @@ from .services import enroll, progress, submit_answer, grade_submission, require
 
 
 def home(request):
-    courses = Course.objects.filter(is_active=True, versions__status='published').distinct()
-    return render(request, 'learning/home.html', {'courses': courses})
+    courses = Course.objects.filter(pk__in=public_courses()).order_by('pk')
+    schema = {'@context': 'https://schema.org', '@type': 'WebSite',
+              'name': BRAND, 'url': settings.SITE_URL + '/', 'inLanguage': 'fa'}
+    return render(request, 'learning/home.html', {'courses': courses, **metadata(request, schema=schema)})
+
+
+def public_course(request, slug):
+    course = get_object_or_404(Course.objects.filter(pk__in=public_courses()), slug=slug)
+    version = course.versions.filter(status='published').order_by('-version').first()
+    stages = version.stages.only('position', 'title', 'course_version_id')
+    title = f'آموزش {course.title} | {BRAND}'
+    schema = {'@context': 'https://schema.org', '@type': 'Course', 'name': course.title,
+              'description': course.description, 'inLanguage': 'fa',
+              'url': settings.SITE_URL + reverse('public_course', args=[course.slug]),
+              'provider': {'@type': 'Organization', 'name': BRAND, 'url': settings.SITE_URL + '/'}}
+    return render(request, 'learning/public_course.html', {
+        'course': course, 'version': version, 'stages': stages,
+        **metadata(request, title, course.description, schema),
+    })
 
 
 def owned_enrollment(request, **filters):

@@ -3,11 +3,14 @@ from django.contrib.auth import views as auth
 from django.urls import path
 from accounts import views as accounts
 from accounts.forms import EmailLoginForm
-from learning import views
+from learning import views, seo
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
+    path('learn/<slug:slug>/', views.public_course, name='public_course'),
+    path('robots.txt', seo.robots, name='robots'),
+    path('sitemap.xml', seo.sitemap, name='sitemap'),
     path('accounts/signup/', accounts.signup, name='signup'),
     path('accounts/login/', auth.LoginView.as_view(authentication_form=EmailLoginForm), name='login'),
     path('accounts/logout/', auth.LogoutView.as_view(), name='logout'),

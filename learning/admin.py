@@ -5,7 +5,8 @@ from django.utils.html import format_html
 from .models import Course, CourseVersion, Stage, Assignment, Enrollment, Submission, GradeRevision, Certificate, AuditEvent
 from .services import progress
 
-admin.site.site_header = 'مدیریت آکادمی testsite'
+admin.site.site_header = 'مدیریت test programing'
+admin.site.site_title = 'test programing'
 admin.site.site_title = 'مدیریت آموزش'
 admin.site.index_title = 'دوره‌ها، دانشجوها و تکالیف'
 

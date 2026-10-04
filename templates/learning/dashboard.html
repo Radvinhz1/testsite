@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% block title %}دوره‌های من | testsite{% endblock %}{% block content %}
+{% extends 'base.html' %}{% block title %}دوره‌های من | test programing{% endblock %}{% block content %}
 <div class="page-heading dashboard-welcome"><div><span class="eyebrow">فضای یادگیری تو</span><h1>سلام {{ user.first_name|default:'دوست من' }}، وقت ساختنه.</h1><p>قدم بعدی لازم نیست بزرگ باشد؛ کافی است شروع کنی.</p></div><a class="avatar" href="{% url 'profile' %}" aria-label="ویرایش پروفایل">{% if user.profile.avatar %}<img src="{% url 'avatar' %}" alt="عکس پروفایل">{% else %}{{ user.first_name|first|default:'ت' }}{% endif %}</a></div>
 <div class="stats"><div><span>دوره‌های من</span><strong>{{ cards|length }}</strong></div><div><span>مراحل قبول‌شده</span><strong>{{ passed }}</strong></div><div><span>دوره‌های تکمیل‌شده</span><strong>{{ completed }}</strong></div></div>
 <div class="section-heading"><div><span class="eyebrow" dir="ltr">MY LEARNING SPACE</span><h2 dir="ltr">My Courses</h2></div><a href="{% url 'certificates' %}" class="text-link">گواهی‌های من ←</a></div>

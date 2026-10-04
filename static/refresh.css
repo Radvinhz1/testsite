@@ -251,3 +251,15 @@ tbody tr:hover { background: #f8fbfc; }
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
   .course-card:hover, .button:hover { transform: none; }
 }
+
+/* Public course introductions and search-friendly content. */
+.breadcrumbs { margin: 28px 0; color: #5f7582; font-size: 14px; }
+.public-course { margin: 24px 0; }
+.public-course h1 { font-size: clamp(28px, 4vw, 44px); line-height: 1.6; }
+.public-course p, .seo-faq p { line-height: 2.1; max-width: 78ch; }
+.syllabus { padding-inline-start: 24px; }
+.syllabus li { padding: 10px 8px; border-bottom: 1px solid #e7edf0; }
+.syllabus h3 { margin: 8px 0; }
+.seo-faq { margin: 36px 0; }
+.seo-faq h3 { margin-top: 24px; }
+@media (max-width: 600px) { .brand { font-size: 18px; } }

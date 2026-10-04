@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     'accounts', 'learning',
 ]
 MIDDLEWARE = [
+    'learning.seo.IndexingMiddleware',
     'django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware',
@@ -31,7 +33,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [BASE_DIR / 'templates'],
               'APP_DIRS': True, 'OPTIONS': {'context_processors': [
                   'django.template.context_processors.request', 'django.contrib.auth.context_processors.auth',
-                  'django.contrib.messages.context_processors.messages']}}]
+                  'django.contrib.messages.context_processors.messages', 'learning.seo.metadata_defaults']}}]
 WSGI_APPLICATION = 'config.wsgi.application'
 DB_ENGINE = os.getenv('DB_ENGINE', 'mssql').lower()
 if DB_ENGINE == 'sqlite':
@@ -101,3 +103,14 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 100
 RATE_LIMIT_ENABLED = True
+
+# Set the final HTTPS origin before enabling public indexing.
+SITE_URL = os.getenv('SITE_URL', '').strip().rstrip('/')
+SEO_INDEXING_ENABLED = os.getenv('SEO_INDEXING_ENABLED', 'false').lower() == 'true'
+if SITE_URL:
+    site_parts = urlsplit(SITE_URL)
+    if (site_parts.scheme != 'https' or not site_parts.hostname or site_parts.path
+            or site_parts.query or site_parts.fragment or site_parts.username or site_parts.password):
+        raise ImproperlyConfigured('SITE_URL must be an HTTPS origin, e.g. https://example.com (no path).')
+if SEO_INDEXING_ENABLED and (not SITE_URL or DEBUG):
+    raise ImproperlyConfigured('Public indexing requires SITE_URL and DJANGO_DEBUG=false.')

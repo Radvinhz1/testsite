@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<nav aria-label="مسیر صفحه" class="breadcrumbs"><a href="{% url 'home' %}">صفحه اصلی</a><span aria-hidden="true"> / </span><span>{{ course.title }}</span></nav>
+<section class="panel public-course">
+<span class="eyebrow">یادگیری با تمرین و بازخورد</span>
+<h1>آموزش {{ course.title }}</h1>
+<p class="lead">{{ course.description }}</p>
+<p>این مسیر {{ stages|length }} مرحله دارد. در هر مرحله درس را می‌خوانی، تکلیف را ارسال می‌کنی و بازخورد مدرس را می‌گیری. برای باز شدن مرحلهٔ بعد، نمره باید {% if version.passing_operator == 'ge' %}برابر یا بالاتر از{% else %}بالاتر از{% endif %} {{ version.passing_threshold }} از ۱۰۰ باشد.</p>
+<div class="actions"><a class="button" href="{% if user.is_authenticated %}{% url 'choose_courses' %}{% else %}{% url 'signup' %}{% endif %}">شروع این مسیر ←</a><a class="text-link" href="{% url 'home' %}#courses">دیدن همهٔ دوره‌ها</a></div>
+</section>
+<section class="panel public-course"><h2>سرفصل‌های دوره</h2><ol class="syllabus">{% for stage in stages %}<li><h3>{{ stage.title }}</h3><p>مطالعهٔ درس، انجام تکلیف و دریافت بازخورد مدرس.</p></li>{% endfor %}</ol></section>
+<section class="panel public-course"><h2>مسیر پیشرفتت را ببین</h2><p>بعد از ثبت‌نام، دوره در بخش «دوره‌های من» نمایش داده می‌شود. نمره‌ها و بازخورد تکالیف در حساب خودت قابل مشاهده‌اند. در صورت نیاز، پاسخت را اصلاح و دوباره ارسال می‌کنی.</p><h2>گواهی پایان دوره</h2><p>بعد از تکمیل مراحل و بارگذاری فایل توسط مدیر، می‌توانی گواهی خود را از بخش «گواهی‌ها» دانلود کنی.</p></section>
+{% endblock %}
