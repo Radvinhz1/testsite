@@ -21,3 +21,9 @@ The earlier MySQL run (37148168177) validated the previous edition only; it is n
 - Manual grading and exact-70 completion are covered by the successful test suite.
 
 This last report update changes documentation only, not the tested application code.
+
+## Visual refresh — 2026-10-04
+
+Presentation-only changes: self-hosted Vazirmatn font, refreshed palette/components, active navigation, dashboard welcome panel and admin typography. No models, database settings, grading rules, permissions or service functions changed.
+
+Headless Chromium verification covered 16 desktop/mobile page states at 1440px and 390px, including home, authentication, dashboard, course, stage, profile, certificates, review queue and Django admin. The local font loaded in every checked state, no horizontal page overflow was detected, and no JavaScript page errors occurred. Desktop home and mobile dashboard screenshots were visually reviewed. Django system check passed.

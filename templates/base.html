@@ -1,5 +1,48 @@
 {% load static %}<!doctype html>
-<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173c35"><title>{% block title %}آکادمی testsite{% endblock %}</title><link rel="stylesheet" href="{% static 'app.css' %}"></head>
-<body><a class="skip" href="#main">رفتن به محتوا</a><header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark" dir="ltr">t.</span><span>تست‌سایت<span class="brand-caption">آکادمی برنامه‌نویسی</span></span></a><nav aria-label="منوی اصلی">{% if user.is_authenticated %}<a href="{% url 'dashboard' %}">دوره‌های من</a><a href="{% url 'certificates' %}">گواهی‌ها</a><a href="{% url 'profile' %}">پروفایل</a>{% if user.is_staff %}{% if perms.learning.review_submission %}<a href="{% url 'review_queue' %}">بررسی تکالیف</a>{% endif %}<a href="{% url 'admin:index' %}">مدیریت</a>{% endif %}<form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="text-button">خروج</button></form>{% else %}<a href="{% url 'login' %}">ورود</a><a class="button small" href="{% url 'signup' %}">شروع یادگیری ←</a>{% endif %}</nav></header>
-<main id="main" class="container">{% if messages %}<div aria-live="polite">{% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% block content %}{% endblock %}</main>
-<footer><a class="brand-footer" href="{% url 'home' %}" dir="ltr">testsite / academy</a><span>هر روز، یک قدم به ساختن نزدیک‌تر.</span><span>یاد بگیر. تمرین کن. بساز.</span></footer></body></html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102b39">
+  <title>{% block title %}آکادمی testsite{% endblock %}</title>
+  <link rel="preload" href="{% static 'fonts/Vazirmatn-Variable.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'app.css' %}">
+  <link rel="stylesheet" href="{% static 'refresh.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">رفتن به محتوا</a>
+<header class="site-header">
+  <a class="brand" href="{% url 'home' %}" aria-label="تست‌سایت، صفحه اصلی">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="m12 9-7 7 7 7M20 9l7 7-7 7M18 5l-4 22" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span>تست‌سایت<span class="brand-caption">یک مسیر تازه برای ساختن</span></span>
+  </a>
+  <nav aria-label="منوی اصلی">
+  {% with current=request.resolver_match.url_name %}
+    {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" {% if current == 'dashboard' or current == 'course_detail' or current == 'stage_detail' or current == 'choose_courses' %}class="nav-active" aria-current="page"{% endif %}>دوره‌های من</a>
+      <a href="{% url 'certificates' %}" {% if current == 'certificates' %}class="nav-active" aria-current="page"{% endif %}>گواهی‌ها</a>
+      <a href="{% url 'profile' %}" {% if current == 'profile' %}class="nav-active" aria-current="page"{% endif %}>پروفایل</a>
+      {% if user.is_staff %}
+        {% if perms.learning.review_submission %}<a href="{% url 'review_queue' %}" {% if current == 'review_queue' or current == 'review_detail' %}class="nav-active" aria-current="page"{% endif %}>بررسی تکالیف</a>{% endif %}
+        <a href="{% url 'admin:index' %}">مدیریت</a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="text-button">خروج</button></form>
+    {% else %}
+      <a href="{% url 'home' %}#courses">مسیرهای یادگیری</a>
+      <a href="{% url 'login' %}" {% if current == 'login' %}class="nav-active" aria-current="page"{% endif %}>ورود</a>
+      <a class="button small" href="{% url 'signup' %}">شروع یادگیری <span aria-hidden="true">←</span></a>
+    {% endif %}
+  {% endwith %}
+  </nav>
+</header>
+<main id="main" class="container">
+  {% if messages %}<div aria-live="polite">{% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer>
+  <a class="brand-footer" href="{% url 'home' %}" dir="ltr">testsite<span> / academy</span></a>
+  <span>هر روز، یک قدم به ساختن نزدیک‌تر.</span>
+  <span class="footer-signature"><span aria-hidden="true">✦</span> یاد بگیر. تمرین کن. بساز.</span>
+</footer>
+</body></html>

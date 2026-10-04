@@ -1,0 +1,11 @@
+:root {
+  --font-family-primary: 'Vazirmatn', Tahoma, sans-serif;
+  --font-family-monospace: Consolas, 'Liberation Mono', monospace;
+}
+body, input, textarea, select, button { font-family: var(--font-family-primary); }
+#header { padding-block: 20px; }
+#branding h1 { font-weight: 750; }
+.module { border-radius: 12px; overflow: hidden; }
+.module h2, .module caption { padding: 13px 16px; font-weight: 650; }
+input[type=submit], .button, .submit-row input { border-radius: 8px; }
+html[data-theme="light"] { --primary: #165467; --secondary: #102b39; --accent: #baf0dd; --link-fg: #087b73; }
