@@ -31,7 +31,7 @@ class Command(BaseCommand):
             if not created:
                 self.stdout.write(f'Skipped existing course: {slug}')
                 continue
-            version = CourseVersion.objects.create(course=course)
+            version = CourseVersion.objects.create(course=course, passing_threshold=70, passing_operator='ge')
             for index, (name, lesson, prompt, reference) in enumerate(lessons, 1):
                 stage = Stage.objects.create(course_version=version, position=index, title=name, lesson_text=lesson)
                 Assignment.objects.create(stage=stage, instructions=prompt, rubric=RUBRIC, reference_text=reference)

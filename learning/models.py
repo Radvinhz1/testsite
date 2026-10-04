@@ -23,7 +23,7 @@ class CourseVersion(models.Model):
     version = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
     status = models.CharField(max_length=20, choices=[('draft', 'پیش‌نویس'), ('published', 'منتشرشده'), ('archived', 'بایگانی')], default='draft')
     passing_threshold = models.PositiveSmallIntegerField(default=70, validators=[MaxValueValidator(100)])
-    passing_operator = models.CharField(max_length=2, choices=[('gt', 'بالاتر از'), ('ge', 'برابر یا بالاتر از')], default='gt')
+    passing_operator = models.CharField(max_length=2, choices=[('gt', 'بالاتر از'), ('ge', 'برابر یا بالاتر از')], default='ge')
     published_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

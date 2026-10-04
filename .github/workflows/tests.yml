@@ -4,7 +4,7 @@ permissions:
   contents: read
 jobs:
   sqlite:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DJANGO_DEBUG: 'true'
       DB_ENGINE: sqlite
@@ -17,36 +17,49 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --settings=config.test_settings
-  mysql:
-    runs-on: ubuntu-latest
+  sqlserver:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     services:
-      mysql:
-        image: mysql:8.4
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          MYSQL_ROOT_PASSWORD: test-only-ci-password
-          MYSQL_DATABASE: testsite
+          ACCEPT_EULA: 'Y'
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: Testsite-CI-only-42!
         ports:
-          - 3306:3306
+          - 1433:1433
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -ptest-only-ci-password"
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Testsite-CI-only-42!' -C -Q 'SELECT 1' -b"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=20
     env:
       DJANGO_DEBUG: 'true'
-      DB_ENGINE: mysql
+      DB_ENGINE: mssql
       DB_NAME: testsite
-      DB_USER: root
-      DB_PASSWORD: test-only-ci-password
+      DB_USER: sa
+      DB_PASSWORD: Testsite-CI-only-42!
       DB_HOST: 127.0.0.1
+      DB_PORT: '1433'
+      DB_ODBC_DRIVER: ODBC Driver 18 for SQL Server
+      DB_TRUST_SERVER_CERTIFICATE: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
           cache: pip
-      - run: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev build-essential pkg-config
-      - run: pip install -r requirements-mysql.txt
+      - name: Install Microsoft ODBC Driver 18
+        run: |
+          curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+      - run: pip install -r requirements-sqlserver.txt
+      - name: Create development database
+        run: docker exec '${{ job.services.sqlserver.id }}' /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$DB_PASSWORD" -C -Q 'CREATE DATABASE [testsite]' -b
       - run: python manage.py migrate
       - run: python manage.py seed_courses
+      - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --settings=config.test_settings

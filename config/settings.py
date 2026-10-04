@@ -33,15 +33,28 @@ TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIR
                   'django.template.context_processors.request', 'django.contrib.auth.context_processors.auth',
                   'django.contrib.messages.context_processors.messages']}}]
 WSGI_APPLICATION = 'config.wsgi.application'
-if os.getenv('DB_ENGINE', 'mysql') == 'sqlite':
+DB_ENGINE = os.getenv('DB_ENGINE', 'mssql').lower()
+if DB_ENGINE == 'sqlite':
     DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
-else:
+elif DB_ENGINE == 'mssql':
     DATABASES = {'default': {
-        'ENGINE': 'django.db.backends.mysql', 'NAME': os.getenv('DB_NAME', 'testsite'),
-        'USER': os.getenv('DB_USER', 'testsite'), 'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', '127.0.0.1'), 'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {'charset': 'utf8mb4', 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+        'ENGINE': 'mssql', 'NAME': os.getenv('DB_NAME', 'testsite'),
+        # Empty USER/PASSWORD selects Windows Integrated Authentication.
+        'USER': os.getenv('DB_USER', ''), 'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'), 'PORT': os.getenv('DB_PORT', ''),
+        'OPTIONS': {
+            'driver': os.getenv('DB_ODBC_DRIVER', 'ODBC Driver 18 for SQL Server'),
+            'extra_params': (
+                'Encrypt=yes;TrustServerCertificate=' +
+                ('yes' if os.getenv('DB_TRUST_SERVER_CERTIFICATE', 'false').lower() == 'true' else 'no')
+            ),
+            'isolation_level': 'READ COMMITTED',
+            'connection_timeout': 15,
+            'connection_retries': 1,
+        },
     }}
+else:
+    raise ImproperlyConfigured('DB_ENGINE must be mssql (SQL Server) or sqlite (local preview).')
 AUTH_USER_MODEL = 'accounts.User'
 AUTHENTICATION_BACKENDS = ['accounts.backends.EmailBackend']
 AUTH_PASSWORD_VALIDATORS = [

@@ -138,11 +138,42 @@ class LearningTests(TestCase):
         self.grade(s, 69)
         self.assertEqual(progress(self.enrollment)['percent'], 0)
         self.grade(s, 70, 'اصلاح')
-        self.assertEqual(progress(self.enrollment)['percent'], 0)
+        self.assertEqual(progress(self.enrollment)['percent'], 25)
+        self.assertTrue(progress(self.enrollment)['rows'][1]['unlocked'])
         self.grade(s, 71, 'اصلاح')
         self.assertEqual(progress(self.enrollment)['percent'], 25)
         self.assertEqual(s.grades.count(), 3)
         self.assertTrue(progress(self.enrollment)['rows'][1]['unlocked'])
+
+    def test_exactly_70_is_passing_and_completes_course(self):
+        for index in range(4):
+            submission = self.submit(index)
+            self.grade(submission, 70)
+            self.assertEqual(progress(self.enrollment)['percent'], 25 * (index + 1))
+        self.enrollment.refresh_from_db()
+        self.assertEqual(self.enrollment.status, 'completed')
+        self.assertEqual(self.enrollment.certificate.status, 'pending')
+
+    def test_upgrade_applies_rule_to_existing_70_grades(self):
+        from importlib import import_module
+        from types import SimpleNamespace
+        from django.apps import apps
+        self.complete()
+        GradeRevision.objects.update(score=70)
+        CourseVersion.objects.update(passing_operator='gt')
+        Enrollment.objects.filter(pk=self.enrollment.pk).update(status='active', completed_at=None)
+        Certificate.objects.all().delete()
+        upgrade = import_module('learning.migrations.0002_inclusive_passing_grade')
+        upgrade.apply_inclusive_policy(apps, SimpleNamespace(connection=connection))
+        self.enrollment.refresh_from_db()
+        self.assertEqual(self.enrollment.course_version.passing_operator, 'ge')
+        self.assertEqual(self.enrollment.status, 'completed')
+        self.assertEqual(progress(self.enrollment)['percent'], 100)
+        self.assertEqual(self.enrollment.certificate.status, 'pending')
+        self.assertEqual(GradeRevision.objects.filter(score=70).count(), 4)
+        # Running the data correction twice must not duplicate certificates.
+        upgrade.apply_inclusive_policy(apps, SimpleNamespace(connection=connection))
+        self.assertEqual(Certificate.objects.count(), 1)
 
     def test_retry_preserves_original(self):
         s = self.submit()
@@ -367,7 +398,7 @@ class LearningTests(TestCase):
         self.assertEqual(self.client.post(reverse('login'), {}).status_code, 429)
 
 
-@skipUnless(connection.vendor == 'mysql', 'Real row-lock tests require MySQL (CI job).')
+@skipUnless(connection.vendor == 'microsoft', 'Real row-lock tests require SQL Server (CI job).')
 class ConcurrencyTests(TransactionTestCase):
     def setUp(self):
         call_command('seed_courses', stdout=io.StringIO())

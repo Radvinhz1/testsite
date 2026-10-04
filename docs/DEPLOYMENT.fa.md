@@ -4,8 +4,8 @@
 
 ## مراحل
 
-۱. مخزن را روی سرور بگیرید؛ محیط مجازی Python 3.13 و وابستگی‌های requirements-mysql.txt را نصب کنید.
-۲. MySQL 8.4 و دیتابیس utf8mb4 بسازید. کاربر عادی برنامه فقط مجوزهای دیتابیس خودش را داشته باشد. برای Migration به مجوز تغییر ساختار هم نیاز است.
+۱. مخزن را روی سرور بگیرید؛ محیط مجازی Python 3.13 و وابستگی‌های requirements-sqlserver.txt را نصب کنید.
+۲. SQL Server 2022 و ODBC Driver 18 را نصب و دیتابیس را با docs/sqlserver.sql بسازید. در Linux درایور ODBC مایکروسافت و unixODBC لازم است. کاربر عادی برنامه فقط مجوزهای دیتابیس خودش را داشته باشد. برای Migration به مجوز تغییر ساختار هم نیاز است.
 ۳. فایل `.env` را با تنظیمات واقعی بسازید:
 
 ```dotenv
@@ -13,12 +13,14 @@ DJANGO_DEBUG=false
 DJANGO_SECRET_KEY=یک_مقدار_تصادفی_طولانی_و_خصوصی
 DJANGO_ALLOWED_HOSTS=example.com,www.example.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com,https://www.example.com
-DB_ENGINE=mysql
+DB_ENGINE=mssql
 DB_NAME=testsite
 DB_USER=testsite
 DB_PASSWORD=رمز_خصوصی
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=1433
+DB_ODBC_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_SERVER_CERTIFICATE=false
 TRUST_PROXY_HTTPS=true
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.example.com
@@ -35,7 +37,7 @@ DEFAULT_FROM_EMAIL=noreply@example.com
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-۴. `python manage.py migrate`، `python manage.py seed_courses`، `python manage.py createsuperuser` و `python manage.py collectstatic --noinput` را اجرا کنید. seed_courses به دوره‌های موجود دست نمی‌زند.
+۴. پیش از ارتقای دیتابیس موجود پشتیبان بگیرید و برنامه را متوقف کنید؛ اصلاح سیاست قبولی در Migration شماره 0002 برگشت خودکار ندارد. `python manage.py migrate`، `python manage.py seed_courses`، `python manage.py createsuperuser` و `python manage.py collectstatic --noinput` را اجرا کنید. seed_courses به دوره‌های موجود دست نمی‌زند.
 ۵. `python manage.py check --deploy` را اجرا کنید.
 ۶. برنامه را با یک process manager و دستور زیر اجرا کنید:
 
@@ -53,6 +55,6 @@ waitress-serve --listen=127.0.0.1:8000 --max-request-body-size=12582912 --truste
 
 روزانه `python manage.py cleanup_rate_limits` را با cron یا Task Scheduler اجرا کنید. به‌روزرسانی امنیتی وابستگی‌ها، پاک‌سازی فایل‌های قدیمی بدون ارجاع و پایش خطاها جزو نگهداری است. فایل جایگزین‌شده خودکار حذف نمی‌شود تا سابقه از دست نرود؛ پس از پشتیبان‌گیری، فایل‌های بدون ارجاع را با رویه کنترل‌شده پاک کنید.
 
-پشتیبان منظم از MySQL **و** private_media لازم است؛ یک‌بار بازیابی هر دو را امتحان کنید. کد به‌تنهایی شامل اطلاعات دانشجوها نیست. کلیدها، فایل‌های کاربران و dump دیتابیس را در Git نگه ندارید.
+پشتیبان منظم از SQL Server **و** private_media لازم است؛ یک‌بار بازیابی هر دو را امتحان کنید. کد به‌تنهایی شامل اطلاعات دانشجوها نیست. کلیدها، فایل‌های کاربران و dump دیتابیس را در Git نگه ندارید.
 
-حساب ایمیل واقعی در این تحویل تنظیم نشده است. ارسال بازیابی رمز در انتشار واقعی فقط با SMTP یا backend ایمیل معتبر کار می‌کند. SQLite فقط برای پیش‌نمایش محلی است؛ استقرار عمومی و تست هم‌زمانی با MySQL انجام شود.
+حساب ایمیل واقعی در این تحویل تنظیم نشده است. ارسال بازیابی رمز در انتشار واقعی فقط با SMTP یا backend ایمیل معتبر کار می‌کند. SQLite فقط برای پیش‌نمایش محلی است؛ استقرار عمومی و تست هم‌زمانی با SQL Server انجام شود.

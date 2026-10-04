@@ -8,7 +8,7 @@
 - انتخاب یک یا هر دو دوره و افزودن دوره دوم از **Add a New Course**.
 - چهار مرحله برای هر دوره با محتوای آموزشی و تکلیف نمونه قابل جایگزینی پیش از ثبت‌نام دانشجو.
 - ارسال متن کد یا فایل؛ سابقه تلاش‌ها و بازخورد مدرس.
-- قبولی با نمره **بالاتر از ۷۰**؛ نمره ۷۰ قبول نیست.
+- قبولی با نمره **۷۰ و بالاتر**؛ نمره ۶۹ مردود و نمره ۷۰ قبول است.
 - بررسی توسط ادمین، تاریخچه اصلاح نمره و جلوگیری از ثبت هم‌زمان نتایج متناقض.
 - قفل واقعی سمت سرور، پیشرفت مستقل دوره‌ها و حفظ سوابق در تغییر نمره.
 - گواهی PDF با بارگذاری ادمین؛ تا آماده‌شدن فایل، متن وضعیت نمایش داده می‌شود.
@@ -17,9 +17,9 @@
 
 تصحیح کد **دستی** است؛ برنامهٔ دانشجو اجرا نمی‌شود. محتوای دوره‌ها نمونه آموزشی اولیه است، نه دوره جامع. پرداخت و میزبانی اینترنتی در این نسخه راه‌اندازی نشده‌اند.
 
-## اجرای سریع روی ویندوز — بدون نیاز اولیه به MySQL
+## راه‌اندازی اصلی روی ویندوز با SQL Server
 
-برای دیدن سایت فوراً می‌توان از SQLite استفاده کرد. تنظیم اصلی پروژه MySQL است؛ روش اتصال آن در بخش بعد آمده است. Python 3.13 پیشنهاد می‌شود.
+تصمیم‌های نهایی: **SQL Server**، قبولی **از ۷۰** و **نمره‌دهی دستی توسط ادمین**. Python 3.13 نسخه ۶۴بیتی، یک SQL Server پشتیبانی‌شده (مثلاً 2022) و Microsoft ODBC Driver 18 for SQL Server لازم است. SSMS فقط ابزار مدیریت است؛ خود SQL Server هم باید نصب و سرویس آن روشن باشد.
 
 در PowerShell:
 
@@ -27,18 +27,52 @@
 git clone git@github.com:Radvinhz1/testsite.git
 cd testsite
 py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-sqlserver.txt
 Copy-Item .env.example .env
 ```
 
-فایل `.env` را باز کنید و این دو مقدار را قرار دهید:
+اگر مخزن را از قبل دارید، داخل پوشه آن `git pull origin main` بزنید؛ فایل `.env` موجود را بازنویسی نکنید. دستورها نیازمند فعال‌کردن محیط مجازی یا تغییر Execution Policy نیستند.
+
+### ۱. ساخت دیتابیس
+
+در SQL Server Management Studio یا **SSMS** به سرور خود وصل شوید و [docs/sqlserver.sql](docs/sqlserver.sql) را اجرا کنید. دیتابیس `testsite` ساخته می‌شود؛ جدول‌ها بعداً با Migration ساخته می‌شوند. نام Server name که در SSMS استفاده می‌کنید برای اتصال برنامه هم لازم است.
+
+### ۲. تنظیم اتصال
+
+فایل `.env` را ویرایش کنید. نمونهٔ **Windows Authentication** برای SQL Server Express روی همان کامپیوتر:
 
 ```dotenv
 DJANGO_DEBUG=true
-DB_ENGINE=sqlite
+DB_ENGINE=mssql
+DB_NAME=testsite
+DB_HOST=localhost\SQLEXPRESS
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_ODBC_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_SERVER_CERTIFICATE=true
 ```
 
-سپس:
+نام `localhost\SQLEXPRESS` مثال است؛ نام واقعی instance را از SSMS بردارید. برای instance پیش‌فرض معمولاً `localhost` است. برای Windows Authentication نام کاربری و رمز خالی می‌مانند و برنامه با حساب ویندوزی که ترمینال را اجرا می‌کند وصل می‌شود؛ آن حساب باید مجوز دیتابیس داشته باشد.
+
+اگر از **SQL Server Authentication** استفاده می‌کنید:
+
+```dotenv
+DB_ENGINE=mssql
+DB_HOST=127.0.0.1
+DB_PORT=1433
+DB_NAME=testsite
+DB_USER=testsite_app
+DB_PASSWORD=رمز_واقعی_که_خودتان_تعیین_کرده‌اید
+DB_ODBC_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_SERVER_CERTIFICATE=true
+```
+
+در این حالت Mixed Mode باید فعال باشد و login دیتابیس ساخته شده باشد. برای اتصال TCP، پروتکل TCP/IP و پورت واقعی instance را در SQL Server Configuration Manager بررسی کنید؛ پورت 1433 فقط مثال پورت ثابت است. کاربر اجرای Migration به مجوز تغییر ساختار نیاز دارد؛ نمونهٔ مجوزها داخل فایل SQL آمده است.
+
+اگر **ODBC Driver 17** نصب دارید، مقدار `DB_ODBC_DRIVER` را دقیقاً `ODBC Driver 17 for SQL Server` بگذارید. مقدار `DB_TRUST_SERVER_CERTIFICATE=true` فقط برای توسعه محلی با گواهی خودامضاست؛ در انتشار واقعی آن را false کنید و گواهی معتبر داشته باشید. ارتباط در هر دو حالت رمزگذاری می‌شود.
+
+### ۳. ایجاد جدول‌ها، دوره‌ها و ادمین
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py migrate
@@ -47,36 +81,23 @@ DB_ENGINE=sqlite
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-این روش نیازمند فعال‌کردن محیط مجازی یا تغییر Execution Policy نیست. اگر مخزن را از قبل دارید، در پوشهٔ همان مخزن ابتدا `git pull origin main` بزنید.
-
 - سایت: http://127.0.0.1:8000/
 - مدیریت: http://127.0.0.1:8000/admin/
-- بررسی تکالیف: http://127.0.0.1:8000/staff/reviews/
+- بررسی پاسخ‌ها و ثبت نمره: http://127.0.0.1:8000/staff/reviews/
 
-در `createsuperuser` ایمیل و رمز مدیر را خودتان تعیین می‌کنید. هیچ رمز پیش‌فرض مدیریتی در پروژه نیست. برای تجربه دانشجو، از صفحه ثبت‌نام یک حساب جدا بسازید. در حالت محلی، لینک بازیابی رمز در ترمینال چاپ می‌شود؛ برای ارسال واقعی ایمیل، SMTP تنظیم شود.
+ایمیل و رمز ادمین را هنگام `createsuperuser` خودتان تعیین می‌کنید؛ رمز پیش‌فرضی در پروژه نیست. برای تست نقش دانشجو، از صفحه ثبت‌نام یک حساب جدا بسازید. ادمین در «بررسی تکالیف» پاسخ و فایل دانشجو را می‌بیند، نمره ۰ تا ۱۰۰ و بازخورد ثبت می‌کند؛ نمرهٔ ۷۰ مرحلهٔ بعد را باز می‌کند.
 
-## استفاده از MySQL
+در توسعه محلی، لینک بازیابی رمز در ترمینال چاپ می‌شود. برای ارسال واقعی ایمیل، SMTP تنظیم شود.
 
-MySQL 8.4 و موتور InnoDB پیشنهاد می‌شود. روی Windows x64 با Python 3.13:
+### اگر فقط پیش‌نمایش بدون دیتابیس نصب‌شده می‌خواهید
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-mysql.txt
-```
+SQLite صرفاً گزینهٔ پیش‌نمایش است. در `.env` مقدار `DB_ENGINE=sqlite` بگذارید، `requirements.txt` را نصب و همان دستورهای مرحله ۳ را اجرا کنید. دیتابیس اصلی پروژه SQL Server است.
 
-در MySQL Workbench فایل [docs/mysql.sql](docs/mysql.sql) را اجرا و یک کاربر اختصاصی برای دیتابیس بسازید. در `.env`:
+### ارتقای نسخه قبلی
 
-```dotenv
-DB_ENGINE=mysql
-DB_NAME=testsite
-DB_USER=testsite
-DB_PASSWORD=رمز_واقعی_که_خودتان_تعیین_کرده‌اید
-DB_HOST=127.0.0.1
-DB_PORT=3306
-```
+Migration شماره `learning/0002_inclusive_passing_grade` هم پیش‌فرض دوره‌های جدید و هم سیاست تمام نسخه‌های موجود را به **۷۰ و بالاتر** تغییر می‌دهد و وضعیت تکمیل/گواهی را از نمرات فعلی دوباره محاسبه می‌کند. پاسخ‌ها و نمرات پاک نمی‌شوند؛ گواهی باطل‌شده خودکار دوباره معتبر نمی‌شود. این اصلاح داده برگشت خودکار ندارد؛ قبل از migrate روی داده واقعی پشتیبان بگیرید و برنامه را موقتاً متوقف کنید.
 
-سپس دستورهای `migrate`، `seed_courses` و `createsuperuser` را دوباره برای دیتابیس MySQL اجرا کنید. تغییر از SQLite به MySQL **داده‌های قبلی را منتقل نمی‌کند**؛ دو دیتابیس مستقل هستند. فایل `.env` در Git نادیده گرفته می‌شود.
-
-برای Linux پیش از نصب mysqlclient، بسته‌های `python3-dev default-libmysqlclient-dev build-essential pkg-config` لازم‌اند. اگر نصب mysqlclient روی ویندوز تلاش کرد از سورس کامپایل کند، معماری ۶۴بیتی و Python 3.13 را بررسی کنید؛ نصب پایه برای پیش‌نمایش SQLite به این درایور نیاز ندارد.
+تغییر موتور از MySQL یا SQLite به SQL Server، **داده‌های قبلی را منتقل نمی‌کند**. برای شروع تازه روی SQL Server، migrate و seed_courses کافی است. انتقال دادهٔ واقعی بین موتورهای مختلف کار جداگانه با پشتیبان‌گیری و اعتبارسنجی است؛ دیتابیس قبلی را حذف نکنید.
 
 ## ادمین چگونه کار می‌کند؟
 
@@ -125,9 +146,9 @@ DB_PORT=3306
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ```
 
-با SQLite سه تست هم‌زمانی عمداً اجرا نمی‌شوند؛ برای بررسی قفل ردیف‌ها، همان فرمان تست را با MySQL اجرا کنید. کاربر دیتابیس تست باید اجازه ساخت و حذف `test_testsite` داشته باشد؛ این مجوز فقط برای محیط تست لازم است.
+با SQLite سه تست هم‌زمانی عمداً اجرا نمی‌شوند؛ برای بررسی قفل ردیف‌ها، همان فرمان تست را با SQL Server اجرا کنید. کاربر دیتابیس تست باید اجازه ساخت و حذف `test_testsite` داشته باشد؛ این مجوز فقط برای محیط تست لازم است.
 
-GitHub Actions دو job جدا برای SQLite و MySQL 8.4 دارد. در MySQL، ثبت‌نام هم‌زمان، پاسخ هم‌زمان و تصحیح هم‌زمان نیز بررسی می‌شوند. فایل [docs/VALIDATION.md](docs/VALIDATION.md) نتیجه اعتبارسنجی نسخه تحویلی را توضیح می‌دهد.
+GitHub Actions دو job جدا برای SQLite و SQL Server 2022 دارد. در SQL Server، ثبت‌نام هم‌زمان، پاسخ هم‌زمان و تصحیح هم‌زمان نیز بررسی می‌شوند. فایل [docs/VALIDATION.md](docs/VALIDATION.md) نتیجه اعتبارسنجی نسخه تحویلی را توضیح می‌دهد.
 
 ## انتشار روی سرور
 
