@@ -114,7 +114,7 @@ class RoleSeparationTests(TestCase):
         self.staff.user_permissions.add(Permission.objects.get(codename='view_stage'))
         response = self.client.get(reverse('lesson_file', args=[self.stage.pk]))
         self.assertEqual(response.status_code, 200)
-        response.close()
+        self.assertEqual(b"".join(response.streaming_content), b"lesson")
         submission = submit_answer(self.student, self.enrollment.pk, self.stage, 'answer')
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse('review_detail', args=[submission.pk])).status_code, 200)
