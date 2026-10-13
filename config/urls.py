@@ -12,7 +12,7 @@ urlpatterns = [
     path('robots.txt', seo.robots, name='robots'),
     path('sitemap.xml', seo.sitemap, name='sitemap'),
     path('accounts/signup/', accounts.signup, name='signup'),
-    path('accounts/login/', auth.LoginView.as_view(authentication_form=EmailLoginForm), name='login'),
+    path('accounts/login/', accounts.RoleLoginView.as_view(authentication_form=EmailLoginForm), name='login'),
     path('accounts/logout/', auth.LogoutView.as_view(), name='logout'),
     path('accounts/profile/', accounts.profile, name='profile'),
     path('accounts/avatar/', views.avatar, name='avatar'),

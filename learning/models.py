@@ -109,6 +109,8 @@ class Enrollment(models.Model):
         indexes = [models.Index(fields=['user', 'status'])]
 
     def clean(self):
+        if self._state.adding and self.user_id and self.user.is_learning_admin:
+            raise ValidationError('حساب مدیریتی نمی‌تواند در دوره ثبت‌نام کند.')
         if self.course_version_id and self.course_version.course_id != self.course_id:
             raise ValidationError('نسخه متعلق به این دوره نیست.')
 

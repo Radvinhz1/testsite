@@ -7,7 +7,6 @@ from .services import progress
 
 admin.site.site_header = 'مدیریت test programing'
 admin.site.site_title = 'test programing'
-admin.site.site_title = 'مدیریت آموزش'
 admin.site.index_title = 'دوره‌ها، دانشجوها و تکالیف'
 
 
@@ -92,7 +91,7 @@ class EnrollmentAdmin(ReadOnlyAdmin):
 
     @admin.display(description='گواهی')
     def certificate_action(self, obj):
-        if obj.status == 'completed':
+        if obj.status == 'completed' and not obj.user.is_learning_admin:
             return format_html('<a href="{}">بارگذاری گواهی</a>', reverse('certificate_upload', args=[obj.pk]))
         return '—'
 
@@ -120,6 +119,8 @@ class CertificateAdmin(ReadOnlyAdmin):
 
     @admin.display(description='فایل PDF')
     def upload_link(self, obj):
+        if obj.enrollment.user.is_learning_admin:
+            return 'حساب مدیریتی — صدور غیرفعال'
         return format_html('<a href="{}">بارگذاری یا جایگزینی</a>', reverse('certificate_upload', args=[obj.enrollment_id]))
 
 

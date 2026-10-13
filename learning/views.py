@@ -10,6 +10,7 @@ from django.db import transaction
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from accounts.models import Profile
+from accounts.access import require_student, student_required
 from .forms import CourseChoiceForm, SubmissionForm, GradeForm, CertificateForm
 from .models import Course, Enrollment, Stage, Submission, Assignment, Certificate
 from .services import enroll, progress, submit_answer, grade_submission, require_permission, issue_certificate
@@ -38,11 +39,14 @@ def public_course(request, slug):
 
 
 def owned_enrollment(request, **filters):
+    require_student(request.user)
     return get_object_or_404(Enrollment.objects.select_related('course', 'course_version', 'user'), user=request.user, **filters)
 
 
 @login_required
 def dashboard(request):
+    if request.user.is_learning_admin:
+        return redirect('admin:index')
     enrollments = list(request.user.enrollments.select_related('course', 'course_version', 'certificate'))
     if not enrollments:
         return redirect('choose_courses')
@@ -51,7 +55,7 @@ def dashboard(request):
                     'passed': sum(c['state']['passed'] for c in cards)})
 
 
-@login_required
+@student_required
 def choose_courses(request):
     form = CourseChoiceForm(request.POST or None, user=request.user)
     if request.method == 'POST' and form.is_valid():
@@ -68,13 +72,13 @@ def choose_courses(request):
                    'onboarding': not request.user.enrollments.exists()})
 
 
-@login_required
+@student_required
 def course_detail(request, pk):
     enrollment = owned_enrollment(request, pk=pk)
     return render(request, 'learning/course.html', {'enrollment': enrollment, 'state': progress(enrollment)})
 
 
-@login_required
+@student_required
 def stage_detail(request, pk):
     stage = get_object_or_404(Stage.objects.select_related('assignment', 'course_version__course'), pk=pk)
     enrollment = owned_enrollment(request, course_version=stage.course_version)
@@ -97,7 +101,7 @@ def stage_detail(request, pk):
     return render(request, 'learning/stage.html', {'stage': stage, 'enrollment': enrollment, 'row': row, 'form': form})
 
 
-@login_required
+@student_required
 def certificates(request):
     cards = [{'enrollment': e, 'state': progress(e)} for e in request.user.enrollments.select_related('course', 'course_version', 'certificate')]
     return render(request, 'learning/certificates.html', {'cards': cards})
@@ -125,7 +129,9 @@ def avatar(request):
 @login_required
 def submission_file(request, pk):
     submission = get_object_or_404(Submission.objects.select_related('enrollment'), pk=pk)
-    if submission.enrollment.user_id != request.user.pk:
+    if submission.enrollment.user_id == request.user.pk:
+        require_student(request.user)
+    else:
         require_permission(request.user, 'review_submission')
     return send_private(submission.answer_file)
 
@@ -139,6 +145,9 @@ def reference_file(request, pk):
 @login_required
 def lesson_file(request, pk):
     stage = get_object_or_404(Stage, pk=pk)
+    if request.user.is_learning_admin:
+        require_permission(request.user, 'view_stage')
+        return send_private(stage.lesson_file)
     enrollment = owned_enrollment(request, course_version_id=stage.course_version_id)
     row = next(r for r in progress(enrollment)['rows'] if r['stage'].pk == stage.pk)
     if not row['unlocked']:
@@ -149,7 +158,9 @@ def lesson_file(request, pk):
 @login_required
 def certificate_file(request, public_id):
     certificate = get_object_or_404(Certificate.objects.select_related('enrollment__course_version'), public_id=public_id)
-    if certificate.enrollment.user_id != request.user.pk:
+    if certificate.enrollment.user_id == request.user.pk:
+        require_student(request.user)
+    else:
         require_permission(request.user, 'change_certificate')
     if certificate.status != 'available' or not progress(certificate.enrollment)['complete']:
         raise Http404
@@ -189,6 +200,7 @@ def review_detail(request, pk):
 def certificate_upload(request, pk):
     require_permission(request.user, 'change_certificate')
     enrollment = get_object_or_404(Enrollment.objects.select_related('user', 'course', 'course_version'), pk=pk)
+    require_student(enrollment.user)
     form = CertificateForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         try:

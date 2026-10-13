@@ -29,6 +29,10 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['first_name', 'last_name']
     objects = UserManager()
 
+    @property
+    def is_learning_admin(self):
+        return self.is_staff or self.is_superuser
+
     def clean(self):
         super().clean()
         self.email = self.email.strip().lower()

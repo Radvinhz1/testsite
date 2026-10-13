@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from accounts.access import require_student
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Max
@@ -42,7 +43,8 @@ def progress(enrollment):
 @transaction.atomic
 def enroll(user, course):
     # Serializes repeated enrollment requests, including choosing both courses.
-    get_user_model().objects.select_for_update().get(pk=user.pk)
+    user = get_user_model().objects.select_for_update().get(pk=user.pk)
+    require_student(user)
     existing = Enrollment.objects.filter(user=user, course=course).first()
     if existing:
         return existing
@@ -58,6 +60,7 @@ def enroll(user, course):
 
 @transaction.atomic
 def submit_answer(user, enrollment_id, stage, text='', file=None):
+    require_student(get_user_model().objects.get(pk=user.pk))
     enrollment = Enrollment.objects.select_for_update().select_related('course_version').get(pk=enrollment_id)
     if enrollment.user_id != user.pk:
         raise PermissionDenied
@@ -97,6 +100,7 @@ def grade_submission(user, submission_id, score, feedback, change_reason='', exp
     require_permission(user, 'review_submission')
     owner_id = Submission.objects.values_list('enrollment_id', flat=True).get(pk=submission_id)
     enrollment = Enrollment.objects.select_for_update().select_related('course_version', 'user', 'course').get(pk=owner_id)
+    require_student(enrollment.user)
     submission = Submission.objects.select_for_update().get(pk=submission_id)
     latest = submission.latest_grade
     current_revision = latest.revision if latest else 0
@@ -120,6 +124,7 @@ def grade_submission(user, submission_id, score, feedback, change_reason='', exp
 def issue_certificate(user, enrollment_id, file, is_sample=False):
     require_permission(user, 'change_certificate')
     enrollment = Enrollment.objects.select_for_update().select_related('course_version', 'user', 'course').get(pk=enrollment_id)
+    require_student(enrollment.user)
     if not progress(enrollment)['complete']:
         raise ValidationError('گواهی فقط برای دوره تکمیل‌شده صادر می‌شود.')
     validate_pdf(file)

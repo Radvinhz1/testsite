@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.views import LoginView
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.db import transaction, IntegrityError
 from django.shortcuts import redirect, render
@@ -7,9 +9,16 @@ from .forms import SignupForm, ProfileForm
 from .models import Profile
 
 
+class RoleLoginView(LoginView):
+    def get_success_url(self):
+        if self.request.user.is_learning_admin:
+            return reverse('admin:index')
+        return super().get_success_url()
+
+
 def signup(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('admin:index' if request.user.is_learning_admin else 'dashboard')
     form = SignupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:

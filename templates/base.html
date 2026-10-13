@@ -33,10 +33,12 @@
   <nav aria-label="منوی اصلی">
   {% with current=request.resolver_match.url_name %}
     {% if user.is_authenticated %}
+      {% if not user.is_learning_admin %}
       <a href="{% url 'dashboard' %}" {% if current == 'dashboard' or current == 'course_detail' or current == 'stage_detail' or current == 'choose_courses' %}class="nav-active" aria-current="page"{% endif %}>دوره‌های من</a>
       <a href="{% url 'certificates' %}" {% if current == 'certificates' %}class="nav-active" aria-current="page"{% endif %}>گواهی‌ها</a>
+      {% endif %}
       <a href="{% url 'profile' %}" {% if current == 'profile' %}class="nav-active" aria-current="page"{% endif %}>پروفایل</a>
-      {% if user.is_staff %}
+      {% if user.is_learning_admin %}
         {% if perms.learning.review_submission %}<a href="{% url 'review_queue' %}" {% if current == 'review_queue' or current == 'review_detail' %}class="nav-active" aria-current="page"{% endif %}>بررسی تکالیف</a>{% endif %}
         <a href="{% url 'admin:index' %}">مدیریت</a>
       {% endif %}
